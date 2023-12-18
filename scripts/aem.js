@@ -561,11 +561,81 @@ async function loadBlock(block) {
   if (status !== 'loading' && status !== 'loaded') {
     block.dataset.blockStatus = 'loading';
     const { blockName } = block.dataset;
+    const getConfig = async () => {
+      try {
+        const resp = await fetch(`${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.config`);
+        return await resp.json();
+      } catch {
+        // no config found
+        return {};
+      }
+    };
+
+    const decorateRowsAndColumns = (blockEl, rows, columns) => {
+      const rowsEl = [...blockEl.children];
+      rowsEl.forEach((row, i) => {
+        if (rows && rows[i]) row.className = `${blockName}-${rows[i]}`;
+        const cols = [...row.children];
+        cols.forEach((col, j) => {
+          if (columns && columns[j]) col.className = `${blockName}-${columns[j]}`;
+        });
+      });
+    };
+
+    const applyTemplate = (row, template) => {
+      const matches = [...template.matchAll(/\${\s*([a-zA-Z0-9_]+)\s*}/g)];
+      let currentPos = 0;
+      const segments = [];
+      matches.forEach((match) => {
+        const rawMatch = match[0];
+        const key = match[1].trim();
+        const { index } = match;
+        segments.push(template.substring(currentPos, index));
+        segments.push(row.querySelector(`.${blockName}-${key}`).outerHTML);
+        currentPos = index + rawMatch.length;
+      });
+      segments.push(template.substring(currentPos));
+      const elem = document.createElement('div');
+      elem.innerHTML = segments.join('');
+      return elem.firstElementChild;
+    };
+
+    const decorateBlockImages = (blockEl, images) => {
+      blockEl.querySelectorAll('img').forEach((img) => img.closest('picture').replaceWith(createOptimizedPicture(img.src, img.alt, false, [{ width: images }])));
+    };
+
+    const config = await getConfig();
+    if (config.columns || config.rows) decorateRowsAndColumns(block, config.rows, config.columns);
+    if (config.images) decorateBlockImages(block, config.images);
+
     try {
       const cssLoaded = loadCSS(`${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.css`);
       const decorationComplete = new Promise((resolve) => {
         (async () => {
           try {
+            if (config.type === 'template') {
+              try {
+                const template = await fetch(`${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.html`);
+                const templateText = await template.text();
+                const dom = new DOMParser().parseFromString(templateText, 'text/html');
+                if (config.rowElement) {
+                  const templateRowEl = dom.querySelector(config.rowElement);
+                  if (templateRowEl) {
+                    [...block.children].forEach((row) => {
+                      const appliedRow = applyTemplate(row, templateRowEl.outerHTML);
+                      templateRowEl.before(appliedRow);
+                    });
+                    templateRowEl.remove();
+                  }
+                }
+                block.textContent = '';
+                block.append(...dom.body.children);
+              } catch (error) {
+                // eslint-disable-next-line no-console
+                console.log('Template Error', error);
+              }
+            }
+
             const mod = await import(
               `${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.js`
             );

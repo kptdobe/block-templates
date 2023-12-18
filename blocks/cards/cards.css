@@ -12,15 +12,15 @@
   background-color: var(--background-color)
 }
 
-.cards .cards-card-body {
+.cards .cards-body {
   margin: 16px;
 }
 
-.cards .cards-card-image {
+.cards .cards-image {
   line-height: 0;
 }
 
-.cards .cards-card-body > *:first-child {
+.cards .cards-body > *:first-child {
   margin-top: 0;
 }
 
