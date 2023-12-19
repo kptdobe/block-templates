@@ -8,8 +8,8 @@ export default function decorate(block) {
   applyBlockTemplate(block, {
     type: 'template',
     rowElement: 'li',
-    columns: [ 'image', 'body' ],
-    images : 750
+    columns: ['image', 'body'],
+    images: 750,
   }, `
   <ul>
     <li>
@@ -17,5 +17,5 @@ export default function decorate(block) {
         {{body}}
     </li>
   </ul>
-  `); 
+  `);
 }
