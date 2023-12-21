@@ -5,17 +5,13 @@ export default function decorate(block) {
   // applyBlockTemplate(block);
 
   /* inline config and template */
-  applyBlockTemplate(block, {
-    type: 'template',
-    rowElement: 'li',
-    columns: ['image', 'body'],
-    images: 750,
-  }, `
-  <ul>
-    <li>
-        {{image}}
-        {{body}}
-    </li>
-  </ul>
+  applyBlockTemplate(block, `<ul>
+        {{#each rows}}
+        <li>
+            {{{col one}}}
+            {{{col two}}}
+        </li>
+        {{/each}}
+    </ul>
   `);
 }
